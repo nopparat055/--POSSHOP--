@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบร้านค้า - POS</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- SweetAlert2 for notifications -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Chart.js for reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- SheetJS for Excel import/export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Custom Javascript Logic -->
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <i class="fa-solid fa-shop"></i>
+        <div class="sidebar-title" id="sidebar-shop-name">ระบบร้านค้า เจ้นก</div>
+        <button id="sidebar-toggle-close" class="sidebar-toggle-btn" title="ปิดเมนูข้าง"><i class="fa-solid fa-chevron-left"></i></button>
+      </div>
+      
+      <nav class="sidebar-menu">
+        <ul>
+          <li class="menu-item active" data-page="home-page">
+            <i class="fa-solid fa-house"></i>
+            <span>หน้าแรก (Home)</span>
+          </li>
+          <li class="menu-item" data-page="add-product-page">
+            <i class="fa-solid fa-plus-minus"></i>
+            <span>เพิ่มสินค้า (Products)</span>
+          </li>
+          <li class="menu-item" data-page="payment-page">
+            <i class="fa-solid fa-cash-register"></i>
+            <span>ชำระเงิน (Payment)</span>
+          </li>
+          <li class="menu-item" data-page="member-page">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>เพิ่มสมาชิกค้างเงิน</span>
+          </li>
+          <li class="menu-item" data-page="report-page">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>รายงานยอดขาย (Reports)</span>
+          </li>
+          <li class="menu-item" data-page="settings-page">
+            <i class="fa-solid fa-gear"></i>
+            <span>ตั้งค่าระบบ (Settings)</span>
+          </li>
+        </ul>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div>เวอร์ชัน 1.0.0</div>
+        <div id="sidebar-footer-desc">ระบบ POS ร้านเจ้นก</div>
+      </div>
+    </aside>
+    <button id="sidebar-toggle-open" class="sidebar-toggle-open-btn" title="เปิดเมนูข้าง"><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- 1. Home / Dashboard Page -->
+      <section id="home-page" class="page-view active">
+        <div class="page-header">
+          <div class="page-title-area">
+          <h1><i class="fa-solid fa-house"></i> หน้าแรก / แดชบอร์ด</h1>
+          <p id="home-shop-desc">ภาพรวมยอดขายวันนี้และกิจกรรมล่าสุดในร้านค้า เจ้นก</p>
+        </div>
+        </div>
+        
+        <!-- KPI Cards -->
+        <div class="dashboard-grid">
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">ยอดขายวันนี้</div>
+              <div class="kpi-value" id="dash-today-sales">0.00 ฿</div>
+            </div>
+            <div class="kpi-icon blue">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">จำนวนเงินที่สมาชิกค้างจ่าย</div>
+              <div class="kpi-value" id="dash-total-debt">0.00 ฿</div>
+            </div>
+            <div class="kpi-icon pink">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">ประเภทสินค้าทั้งหมด</div>
+              <div class="kpi-value" id="dash-product-count">0 รายการ</div>
+            </div>
+            <div class="kpi-icon yellow">
+              <i class="fa-solid fa-box-open"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shop Contact Info Card -->
+        <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
+          <div class="card-title" style="margin-bottom: 12px; padding-bottom: 6px; font-size: 15px;">
+            <i class="fa-solid fa-store"></i> ข้อมูลติดต่อร้านค้า
+          </div>
+          <div class="home-shop-info-card">
+            <div class="shop-info-detail-item">
+              <i class="fa-solid fa-map-marker-alt"></i>
+              <div>
+                <div style="font-size: 11px; color: var(--text-muted);">ที่อยู่ร้านค้า</div>
+                <span id="home-info-address" style="font-weight: 600;">-</span>
+              </div>
+            </div>
+            <div class="shop-info-detail-item">
+              <i class="fa-solid fa-phone"></i>
+              <div>
+                <div style="font-size: 11px; color: var(--text-muted);">เบอร์โทรศัพท์</div>
+                <span id="home-info-phone" style="font-weight: 600;">-</span>
+              </div>
+            </div>
+            <div class="shop-info-detail-item">
+              <i class="fa-solid fa-comments"></i>
+              <div>
+                <div style="font-size: 11px; color: var(--text-muted);">ข้อมูลการติดต่ออื่นๆ (Line/FB)</div>
+                <span id="home-info-contact" style="font-weight: 600;">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-sections">
+          <!-- Today's Chart -->
+          <div class="card">
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span><i class="fa-solid fa-chart-bar"></i> ยอดขายรายชั่วโมง</span>
+              <input type="date" id="dashboard-chart-date" class="form-input" style="width: auto; padding: 4px 8px; font-size: 13px;" onchange="updateHourlySalesChart()">
+            </div>
+            <div class="chart-container">
+              <canvas id="todaySalesChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Quick Menu & Announcements -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title" style="justify-content: space-between; align-items: center; display: flex;">
+                <span><i class="fa-solid fa-qrcode"></i> QR Code รับชำระเงิน</span>
+              </div>
+              <div class="qrcode-section" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                <div class="qrcode-container" id="qrcode-display-container" style="width: 100%; display: flex; justify-content: center; align-items: center; min-height: 180px; border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px; background: #FFFBF7;">
+                  <img id="qrcode-img" src="" alt="QR Code สำหรับชำระเงิน" style="max-width: 180px; max-height: 180px; display: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);">
+                  <div id="qrcode-placeholder" class="qrcode-placeholder-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-qrcode" style="font-size: 48px; color: var(--text-muted); opacity: 0.5;"></i>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px; text-align: center;">ยังไม่มีรูป QR Code</p>
+                  </div>
+                </div>
+                <div class="qrcode-actions" style="display: flex; gap: 8px; width: 100%;">
+                  <button class="btn btn-blue" onclick="triggerQRCodeUpload()" style="flex-grow: 1; font-size: 13px; padding: 8px 12px;">
+                    <i class="fa-solid fa-upload"></i> อัปโหลด QR Code
+                  </button>
+                  <button id="btn-qrcode-delete" class="btn btn-pink btn-icon-only" onclick="removeQRCode()" style="width: 38px; height: 38px; display: none;" title="ลบ QR Code">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                  <input type="file" id="qrcode-upload-input" accept="image/*" style="display: none;" onchange="uploadQRCode(event)">
+                </div>
+              </div>
+            </div>
+            
+            <div class="card" style="margin-bottom: 0; flex-grow: 1;">
+              <div class="card-title">
+                <i class="fa-solid fa-circle-play"></i> เมนูลัดอย่างรวดเร็ว
+              </div>
+              <div class="quick-links">
+                <div class="quick-link-btn" onclick="navigateToPage('payment-page')">
+                  <i class="fa-solid fa-cart-shopping"></i>
+                  <span>หน้าขายสินค้า</span>
+                </div>
+                <div class="quick-link-btn" onclick="navigateToPage('add-product-page')">
+                  <i class="fa-solid fa-folder-plus"></i>
+                  <span>เพิ่มสินค้าใหม่</span>
+                </div>
+                <div class="quick-link-btn" onclick="navigateToPage('member-page')">
+                  <i class="fa-solid fa-users"></i>
+                  <span>บันทึกผู้ค้างเงิน</span>
+                </div>
+                <div class="quick-link-btn" onclick="navigateToPage('report-page')">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                  <span>รายงานสรุป</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Add Product Page -->
+      <section id="add-product-page" class="page-view">
+        <div class="page-header">
+          <div class="page-title-area">
+            <h1><i class="fa-solid fa-plus-minus"></i> จัดการรายการสินค้า</h1>
+            <p>เพิ่มสินค้าใหม่ แก้ไขข้อมูล หรือนำเข้า-ส่งออกคลังสินค้าไปยัง Google Sheets</p>
+          </div>
+        </div>
+
+        <div class="add-product-grid">
+          <!-- Left Column: File Operations & Form -->
+          <div class="add-product-left">
+            <!-- Import/Export Operations Card -->
+            <div class="card" style="margin-bottom: 24px;">
+              <div class="card-title">
+                <i class="fa-solid fa-file-excel"></i> นำเข้าและส่งออกข้อมูลสินค้า
+              </div>
+              <div class="operations-grid">
+                <button class="btn btn-yellow" onclick="loadFromGoogleSheet('Products')" style="font-size: 13px; padding: 10px 12px; width: 100%;">
+                  <i class="fa-solid fa-cloud-arrow-down"></i> ดึงข้อมูล Google Sheet
+                </button>
+                <button class="btn btn-blue" onclick="saveToGoogleSheet('Products')" style="font-size: 13px; padding: 10px 12px; width: 100%;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> บันทึก Google Sheet
+                </button>
+                <button class="btn btn-yellow" onclick="downloadExcelTemplate()" style="font-size: 13px; padding: 10px 12px; width: 100%;">
+                  <i class="fa-solid fa-file-excel"></i> โหลดเทมเพลต Excel
+                </button>
+                <button class="btn btn-blue" onclick="triggerExcelImport()" style="font-size: 13px; padding: 10px 12px; width: 100%;">
+                  <i class="fa-solid fa-file-import"></i> นำเข้าไฟล์ Excel
+                </button>
+                <input type="file" id="excel-import-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="importProductsFromExcel(event)">
+              </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card" style="margin-bottom: 24px;">
+              <div class="card-title">
+                <i class="fa-solid fa-pen-to-square"></i> กรอกข้อมูลสินค้า
+              </div>
+              <form id="product-form" onsubmit="handleProductSubmit(event)">
+                <input type="hidden" id="product-id">
+                <div class="form-grid-vertical">
+                  <div class="form-group">
+                    <label class="form-label" for="prod-name">ชื่อสินค้า <span style="color:red;">*</span></label>
+                    <input class="form-input" type="text" id="prod-name" placeholder="ระบุชื่อสินค้า" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prod-barcode">บาร์โค้ด <span style="color:red;">*</span></label>
+                    <div style="display:flex; gap: 8px;">
+                      <input class="form-input" type="text" id="prod-barcode" placeholder="ระบุหรือสแกนบาร์โค้ด" required>
+                      <button class="btn btn-yellow" type="button" onclick="generateRandomBarcode()" title="สร้างบาร์โค้ดสุ่ม">
+                        <i class="fa-solid fa-barcode"></i> สุ่ม
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prod-desc">คำอธิบายสินค้า</label>
+                    <input class="form-input" type="text" id="prod-desc" placeholder="รายละเอียด เช่น รสชาติ, ขนาด, น้ำหนัก">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label class="form-label" for="prod-price">ราคาต่อหน่วย (บาท) <span style="color:red;">*</span></label>
+                      <input class="form-input" type="number" id="prod-price" min="0" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label class="form-label" for="prod-stock">จำนวนคงเหลือ (ชิ้น) <span style="color:red;">*</span></label>
+                      <input class="form-input" type="number" id="prod-stock" min="0" placeholder="0" required>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                  <button class="btn btn-pink" type="button" onclick="resetProductForm()">
+                    <i class="fa-solid fa-rotate-left"></i> ล้างข้อมูล
+                  </button>
+                  <button class="btn btn-blue" type="submit">
+                    <i class="fa-solid fa-circle-check"></i> บันทึกสินค้า
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right Column: Products Table -->
+          <div class="add-product-right">
+            <div class="card" style="height: 100%; display: flex; flex-direction: column; margin-bottom: 24px;">
+              <div class="card-title" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <span><i class="fa-solid fa-list"></i> รายการสินค้าทั้งหมดในระบบ</span>
+                <button id="btn-bulk-delete" class="btn btn-pink" onclick="deleteSelectedProducts()" style="display: none; padding: 8px 14px; font-size: 13px;">
+                  <i class="fa-solid fa-trash-can"></i> ลบสินค้าที่เลือก (<span id="selected-products-count">0</span>)
+                </button>
+              </div>
+              
+              <div class="form-group">
+                <div class="input-with-icon">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input class="form-input" type="text" id="search-product-list" oninput="renderProductTable()" placeholder="ค้นหาด้วย ชื่อสินค้า หรือ บาร์โค้ด...">
+                </div>
+              </div>
+              
+              <div class="table-container" style="flex-grow: 1; overflow-y: auto; max-height: 580px;">
+                <table class="data-table" id="products-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-products" onchange="toggleSelectAllProducts(this)"></th>
+                      <th>บาร์โค้ด</th>
+                      <th>ชื่อสินค้า</th>
+                      <th>คำอธิบาย</th>
+                      <th>ราคา</th>
+                      <th>คงเหลือ</th>
+                      <th style="width: 120px; text-align: center;">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="products-tbody">
+                    <!-- Data will be loaded by Javascript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Payment Page -->
+      <section id="payment-page" class="page-view">
+        <div class="page-header">
+          <div class="page-title-area">
+            <h1><i class="fa-solid fa-cash-register"></i> ระบบชำระเงิน</h1>
+            <p>ทำรายการขายสินค้า คำนวณเงินทอน และบันทึกประวัติการซื้อขาย</p>
+          </div>
+        </div>
+
+        <div class="payment-grid">
+          
+          <!-- ตะกร้าสินค้าและการค้นหา -->
+          <div class="product-picker-panel">
+            <div class="card" style="margin-bottom: 0; position: relative; z-index: 20;">
+              <div class="card-title">
+                <i class="fa-solid fa-search"></i> ค้นหาและจำลองบาร์โค้ด
+              </div>
+              
+              <!-- จำลองบาร์โค้ด ยิงบาร์โค้ด -->
+              <div class="barcode-scanner-simulator">
+                <div style="flex-grow: 1; position: relative;">
+                  <div class="input-with-icon">
+                    <i class="fa-solid fa-barcode"></i>
+                    <input class="form-input" type="text" id="scan-barcode-input" placeholder="พิมพ์บาร์โค้ด แล้วกด Enter (จำลองการยิงบาร์โค้ด)..." autocomplete="off">
+                  </div>
+                  <!-- Dropdown suggestions for barcode -->
+                  <div id="barcode-suggestions" class="search-results-dropdown"></div>
+                </div>
+                <!-- ปุ่มเสริม สีฟ้า เพื่อความสะดวก -->
+                <button class="btn btn-blue" onclick="handleBarcodeScanTrigger()">
+                  <i class="fa-solid fa-arrow-turn-down"></i> ค้นหาบาร์โค้ด
+                </button>
+              </div>
+
+              <!-- ค้นหาแบบธรรมดา -->
+              <div class="form-group" style="position: relative; margin-bottom: 0;">
+                <div class="input-with-icon">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input class="form-input" type="text" id="search-pay-product" placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหาและเลือกซื้อ..." autocomplete="off">
+                </div>
+                <!-- Dropdown suggestions -->
+                <div id="search-suggestions" class="search-results-dropdown"></div>
+              </div>
+            </div>
+
+            <!-- แคตตาล็อกเลือกสินค้าด่วน -->
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title" style="justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px;">
+                <span><i class="fa-solid fa-tags"></i> แคตตาล็อกสินค้าด่วน (คลิกเพื่อซื้อ)</span>
+                <span id="catalog-count-badge" class="badge badge-success" style="font-size: 11px;">0 สินค้า</span>
+              </div>
+              <div id="quick-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 180px; overflow-y: auto; padding: 4px;">
+                <!-- Dynamic Content -->
+              </div>
+            </div>
+
+            <!-- ตารางตะกร้าสินค้า -->
+            <div class="card" style="margin-bottom: 0; min-height: 300px;">
+              <div class="card-title" style="justify-content: space-between;">
+                <span><i class="fa-solid fa-basket-shopping"></i> ตะกร้าสินค้า</span>
+                <!-- ปุ่มล้างตะกร้า สีชมพู -->
+                <button class="btn btn-pink btn-icon-only" onclick="clearCart()" title="ล้างตะกร้า">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+
+              <div class="table-container">
+                <table class="data-table cart-table">
+                  <thead>
+                    <tr>
+                      <th>ชื่อสินค้า</th>
+                      <th>ราคาต่อหน่วย</th>
+                      <th style="width: 120px; text-align: center;">จำนวน</th>
+                      <th>ยอดรวม</th>
+                      <th style="width: 50px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="cart-tbody">
+                    <!-- Javascript will populate this -->
+                    <tr>
+                      <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                        ไม่มีสินค้าในตะกร้า เริ่มต้นค้นหาด้านบนหรือยิงบาร์โค้ดเพื่อซื้อสินค้า
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- แผงคำนวณราคากล่องชำระเงิน -->
+          <div class="payment-summary-panel">
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title">
+                <i class="fa-solid fa-receipt"></i> สรุปการชำระเงิน
+              </div>
+              
+              <div class="summary-row">
+                <span>ยอดรวมสินค้า</span>
+                <span id="summary-subtotal" style="font-weight: 600;">0.00 ฿</span>
+              </div>
+              
+              <div class="summary-row total">
+                <span>ยอดชำระสุทธิ</span>
+                <span id="summary-total">0.00 ฿</span>
+              </div>
+
+              <!-- วันที่และเวลาชำระเงิน -->
+              <div class="form-group">
+                <label class="form-label">วันที่และเวลาชำระเงิน</label>
+                <div style="display:flex; gap: 8px;">
+                  <input class="form-input" type="datetime-local" id="payment-datetime" required>
+                  <button class="btn btn-yellow btn-icon-only" onclick="setCurrentDateTime('payment-datetime')" type="button" title="ตั้งค่าเวลาปัจจุบัน">
+                    <i class="fa-solid fa-clock"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ช่องจำนวนเงินที่จ่าย -->
+              <div class="form-group">
+                <label class="form-label" for="payment-cash">จำนวนเงินที่จ่าย (บาท)</label>
+                <input class="form-input" type="number" id="payment-cash" min="0" step="0.01" placeholder="0.00" style="font-size: 20px; font-weight: 700; color: #0288D1;" oninput="calculateChange()">
+              </div>
+              
+              <!-- ทางลัดเงินด่วน -->
+              <div class="form-group">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                  <button class="btn btn-yellow" style="padding: 6px;" onclick="addQuickCash(20)">20</button>
+                  <button class="btn btn-yellow" style="padding: 6px;" onclick="addQuickCash(50)">50</button>
+                  <button class="btn btn-yellow" style="padding: 6px;" onclick="addQuickCash(100)">100</button>
+                  <button class="btn btn-yellow" style="padding: 6px;" onclick="addQuickCash(500)">500</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px;">
+                  <button class="btn btn-yellow" style="padding: 6px;" onclick="addQuickCash(1000)">1000</button>
+                  <button class="btn btn-yellow" style="padding: 6px;" onclick="setExactCash()">พอดี</button>
+                  <button class="btn btn-pink" style="padding: 6px;" onclick="clearCashInput()">ล้าง</button>
+                </div>
+              </div>
+
+              <!-- เงินทอนแสดงผลอัตโนมัติ -->
+              <div class="change-display">
+                <div class="change-label">เงินทอน</div>
+                <div class="change-value" id="payment-change">0.00 ฿</div>
+              </div>
+
+              <!-- ปุ่ม ยืนยันชำระเงิน สีฟ้า -->
+              <button class="btn btn-blue" style="width: 100%; padding: 16px; font-size: 18px;" onclick="processPayment()">
+                <i class="fa-solid fa-circle-check"></i> ยืนยันชำระเงิน
+              </button>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- 4. Add Member Page (Debt ledger) -->
+      <section id="member-page" class="page-view">
+        <div class="page-header">
+          <div class="page-title-area">
+            <h1><i class="fa-solid fa-user-plus"></i> จัดการสมาชิกและยอดค้างชำระ</h1>
+            <p>เพิ่ม แก้ไข หรือลบประวัติของลูกค้าที่ค้างเงิน (หนี้สินสะสม) ของร้าน</p>
+          </div>
+          <div class="btn-group-right">
+            <!-- ปุ่มเรียกดู/ดึงข้อมูล สีเหลือง -->
+            <button class="btn btn-yellow" onclick="loadFromGoogleSheet('Members')">
+              <i class="fa-solid fa-cloud-arrow-down"></i> เรียกดูข้อมูล Google Sheet
+            </button>
+            <!-- ปุ่มบันทึกข้อมูล สีฟ้า -->
+            <button class="btn btn-blue" onclick="saveToGoogleSheet('Members')">
+              <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูลใน Google Sheet
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-user-pen"></i> ข้อมูลสมาชิกค้างเงิน
+          </div>
+          <form id="member-form" onsubmit="handleMemberSubmit(event)">
+            <input type="hidden" id="member-id">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="member-firstname">ชื่อจริง <span style="color:red;">*</span></label>
+                <input class="form-input" type="text" id="member-firstname" placeholder="ระบุชื่อจริง" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="member-lastname">นามสกุล <span style="color:red;">*</span></label>
+                <input class="form-input" type="text" id="member-lastname" placeholder="ระบุนามสกุล" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="member-debt">จำนวนเงินที่ค้าง (บาท) <span style="color:red;">*</span></label>
+                <input class="form-input" type="number" id="member-debt" min="0" placeholder="0.00" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">วันที่และเวลาบันทึก</label>
+                <div style="display:flex; gap: 8px;">
+                  <input class="form-input" type="datetime-local" id="member-datetime" required>
+                  <button class="btn btn-yellow btn-icon-only" onclick="setCurrentDateTime('member-datetime')" type="button" title="ตั้งค่าเวลาปัจจุบัน">
+                    <i class="fa-solid fa-clock"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <!-- ปุ่มล้างฟอร์ม สีชมพู -->
+              <button class="btn btn-pink" type="button" onclick="resetMemberForm()">
+                <i class="fa-solid fa-rotate-left"></i> ล้างข้อมูล
+              </button>
+              <!-- ปุ่มเพิ่มสมาชิก สีฟ้า -->
+              <button class="btn btn-blue" type="submit">
+                <i class="fa-solid fa-user-plus"></i> บันทึกสมาชิกค้างเงิน
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-users"></i> สมาชิกค้างชำระเงินทั้งหมด
+          </div>
+          <div class="form-group">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input class="form-input" type="text" id="search-member-list" oninput="renderMemberTable()" placeholder="ค้นหาชื่อหรือนามสกุลสมาชิก...">
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table" id="members-table">
+              <thead>
+                <tr>
+                  <th>ชื่อ - นามสกุล</th>
+                  <th>จำนวนเงินค้าง (บาท)</th>
+                  <th>วันที่อัปเดตล่าสุด</th>
+                  <th style="width: 200px;">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="members-tbody">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Sales Report Page -->
+      <section id="report-page" class="page-view">
+        <div class="page-header">
+          <div class="page-title-area">
+            <h1><i class="fa-solid fa-chart-line"></i> หน้ารายงานยอดขายและสถิติ</h1>
+            <p>รายงานสถิติยอดขาย การค้างชำระ และกราฟสรุป</p>
+          </div>
+          <div class="btn-group-right">
+            <!-- ปุ่มดึงข้อมูล สีเหลือง -->
+            <button class="btn btn-yellow" onclick="loadFromGoogleSheet('Sales')">
+              <i class="fa-solid fa-cloud-arrow-down"></i> เรียกดูข้อมูลยอดขาย Google Sheet
+            </button>
+            <!-- ปุ่มบันทึกข้อมูล สีฟ้า -->
+            <button class="btn btn-blue" onclick="saveToGoogleSheet('Sales')">
+              <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูลยอดขาย Google Sheet
+            </button>
+          </div>
+        </div>
+
+        <!-- รายงานคัดเลือกปี/เดือน -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-filter"></i> ตัวกรองเวลาดูประวัติ
+          </div>
+          <div class="report-filter-bar">
+            <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+              <label class="form-label" for="filter-month">เลือกเดือน</label>
+              <select class="form-input" id="filter-month" onchange="loadReportData()">
+                <option value="all">ทุกเดือน</option>
+                <option value="0">มกราคม</option>
+                <option value="1">กุมภาพันธ์</option>
+                <option value="2">มีนาคม</option>
+                <option value="3">เมษายน</option>
+                <option value="4">พฤษภาคม</option>
+                <option value="5">มิถุนายน</option>
+                <option value="6">กรกฎาคม</option>
+                <option value="7">สิงหาคม</option>
+                <option value="8">กันยายน</option>
+                <option value="9">ตุลาคม</option>
+                <option value="10">พฤศจิกายน</option>
+                <option value="11">ธันวาคม</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+              <label class="form-label" for="filter-year">เลือกปี พ.ศ.</label>
+              <select class="form-input" id="filter-year" onchange="loadReportData()">
+                <!-- Javascript will populate years dynamically -->
+              </select>
+            </div>
+            
+            <!-- ปุ่มสีเหลือง เพื่อล้างตัวกรองกลับสู่ค่าเริ่มต้น -->
+            <button class="btn btn-yellow" onclick="resetReportFilter()">
+              <i class="fa-solid fa-filter-circle-xmark"></i> ล้างตัวกรอง
+            </button>
+          </div>
+        </div>
+
+        <!-- Report KPI Cards -->
+        <div class="reports-summary-grid">
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">ยอดขายรวมประจำงวด</div>
+              <div class="kpi-value" id="report-total-revenue">0.00 ฿</div>
+            </div>
+            <div class="kpi-icon blue"><i class="fa-solid fa-sack-dollar"></i></div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">จำนวนบิลขาย</div>
+              <div class="kpi-value" id="report-total-bills">0 บิล</div>
+            </div>
+            <div class="kpi-icon yellow"><i class="fa-solid fa-file-invoice"></i></div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">จำนวนสมาชิกค้างเงิน</div>
+              <div class="kpi-value" id="report-active-debt-members">0 คน</div>
+            </div>
+            <div class="kpi-icon pink"><i class="fa-solid fa-users-slash"></i></div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <div class="kpi-title">ยอดหนี้ค้างจ่ายสะสม</div>
+              <div class="kpi-value" id="report-total-debt-amount">0.00 ฿</div>
+            </div>
+            <div class="kpi-icon pink"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="dashboard-sections">
+          
+          <!-- กราฟวงกลมสินค้าขายดี หรือ กราฟแท่งยอดขาย -->
+          <div class="card">
+            <div class="card-title">
+              <i class="fa-solid fa-chart-pie"></i> กราฟสรุปยอดขายแยกตามรายวันในเดือนนี้
+            </div>
+            <div class="chart-container">
+              <canvas id="monthlySalesBarChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- สินค้าขายดีที่สุด -->
+          <div class="card">
+            <div class="card-title">
+              <i class="fa-solid fa-trophy"></i> 5 อันดับสินค้าขายดีที่สุด
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>สินค้า</th>
+                    <th style="text-align: right;">จำนวนที่ขาย</th>
+                  </tr>
+                </thead>
+                <tbody id="best-sellers-tbody">
+                  <!-- Javascript updates this -->
+                  <tr>
+                    <td colspan="2" style="text-align: center; color: var(--text-muted); padding: 20px;">ไม่มีข้อมูลการขาย</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- รายการธุรกรรมทั้งหมดในช่วงเวลา -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-clock-rotate-left"></i> ประวัติรายการชำระเงินทั้งหมด
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="transactions-table">
+              <thead>
+                <tr>
+                  <th>เลขที่รายการ</th>
+                  <th>วันที่-เวลา</th>
+                  <th>รายการสินค้า</th>
+                  <th>ยอดชำระสุทธิ</th>
+                  <th>จ่ายเงิน</th>
+                  <th>เงินทอน</th>
+                  <th style="width: 120px;">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="transactions-tbody">
+                <!-- Dynmic content -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Settings Page -->
+      <section id="settings-page" class="page-view">
+        <div class="page-header">
+          <div class="page-title-area">
+            <h1><i class="fa-solid fa-gear"></i> ตั้งค่าระบบ (Settings)</h1>
+            <p>จัดการข้อมูลร้านค้าและตั้งค่าการทำงานต่าง ๆ ของระบบ POS</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-shop"></i> ข้อมูลร้านค้าและระบบ
+          </div>
+          <form id="settings-form" onsubmit="handleSettingsSubmit(event)">
+            <div class="form-grid-vertical" style="display: grid; gap: 20px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="settings-shop-name">ชื่อร้านค้า <span style="color:red;">*</span></label>
+                <input class="form-input" type="text" id="settings-shop-name" placeholder="ระบุชื่อร้านค้า" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="settings-shop-desc">สโลแกน / คำอธิบายร้านค้า</label>
+                <input class="form-input" type="text" id="settings-shop-desc" placeholder="เช่น ร้านสะดวกซื้อครบวงจร ภาพรวมขายดี">
+              </div>
+              <div class="form-row" style="margin-bottom: 0;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="settings-shop-phone">เบอร์โทรศัพท์ติดต่อ</label>
+                  <input class="form-input" type="text" id="settings-shop-phone" placeholder="เช่น 081-234-5678">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="settings-shop-contact">ข้อมูลติดต่ออื่นๆ (Line ID / FB Page)</label>
+                  <input class="form-input" type="text" id="settings-shop-contact" placeholder="เช่น @nok_shop หรือ fb.com/nokshop">
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="settings-shop-address">ที่อยู่ร้านค้า</label>
+                <textarea class="form-input" id="settings-shop-address" placeholder="ระบุที่อยู่ของร้านค้าอย่างละเอียด" rows="2" style="resize: vertical;"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="settings-sound-select">เสียงการแจ้งเตือนเมื่อชำระเงินเสร็จสิ้น</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <select class="form-input" id="settings-sound-select" style="flex-grow: 1;">
+                    <option value="cash-register">เสียงเครื่องคิดเงิน (Cash Register)</option>
+                    <option value="chime">เสียงกระดิ่งใส (Chime)</option>
+                    <option value="beep">เสียงติ๊ดสั้น (Beep)</option>
+                    <option value="loud-bell">เสียงกระดิ่งดัง (Loud Bell)</option>
+                    <option value="none">ปิดเสียง (No Sound)</option>
+                  </select>
+                  <button class="btn btn-yellow" type="button" onclick="testSelectedSound()" style="padding: 10px 14px;" title="ทดสอบเสียง">
+                    <i class="fa-solid fa-volume-high"></i> ทดสอบเสียง
+                  </button>
+                </div>
+                
+                <!-- Custom Sounds Upload Area -->
+                <div id="custom-sounds-container">
+                  <label class="form-label" style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; color: var(--text-muted);">
+                    <i class="fa-solid fa-music" style="color: #FF7043;"></i> จัดการเสียงแจ้งเตือนเพิ่มเติม (สูงสุด 1MB)
+                  </label>
+                  <div id="custom-sounds-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; max-height: 120px; overflow-y: auto;">
+                    <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 6px 0;">ยังไม่มีเสียงเพิ่มเติมที่อัปโหลด</div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-blue" type="button" onclick="triggerSoundUpload()" style="font-size: 12px; padding: 6px 12px; flex-grow: 1;">
+                      <i class="fa-solid fa-cloud-arrow-up"></i> เพิ่มเสียงแจ้งเตือนของคุณ (.mp3, .wav)
+                    </button>
+                    <input type="file" id="sound-upload-input" accept="audio/*" style="display: none;" onchange="uploadCustomSound(event)">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 24px;">
+              <button class="btn btn-blue" type="submit">
+                <i class="fa-solid fa-circle-check"></i> บันทึกการตั้งค่า
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-title">
+            <i class="fa-solid fa-database"></i> จัดการข้อมูลระบบ (Data Management)
+          </div>
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+            เครื่องมือช่วยเหลือนำเข้าข้อมูลสินค้าทดสอบอย่างรวดเร็ว
+          </p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn btn-yellow" type="button" onclick="loadGrocerySampleProducts()">
+              <i class="fa-solid fa-store"></i> นำเข้าสินค้าตัวอย่างร้านชำ 100 อย่าง
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+</body>
+</html>
