@@ -1,0 +1,22 @@
+{
+  "name": "ระบบร้านค้า เจ้นก - POS",
+  "short_name": "เจ้นก POS",
+  "description": "ระบบจัดการหน้าร้าน ชำระเงิน และเช็คยอดขาย ร้านค้าเจ้นก",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F0F4F8",
+  "theme_color": "#1E3A8A",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

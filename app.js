@@ -197,6 +197,17 @@ function initApp() {
     renderProductTable();
     renderMemberTable();
     renderQuickCatalog();
+
+    // Register Service Worker for PWA mobile app support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+          console.log('Service Worker registered successfully with scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.error('Service Worker registration failed:', err);
+        });
+    }
   } catch (err) {
     console.error("Error during POS initialization:", err);
     Swal.fire({
