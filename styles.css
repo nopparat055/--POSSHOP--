@@ -863,6 +863,21 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+.catalog-item-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+  border: 1px solid var(--border-color);
+  background-color: #FFF3E0;
+  transition: var(--transition-fast);
+}
+
+.catalog-item-btn:hover .catalog-item-img {
+  transform: scale(1.06);
+}
+
 .catalog-item-name {
   font-size: 13px;
   font-weight: 600;

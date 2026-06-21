@@ -41,13 +41,13 @@
             <i class="fa-solid fa-house"></i>
             <span>หน้าแรก (Home)</span>
           </li>
-          <li class="menu-item" data-page="add-product-page">
-            <i class="fa-solid fa-plus-minus"></i>
-            <span>เพิ่มสินค้า (Products)</span>
-          </li>
           <li class="menu-item" data-page="payment-page">
             <i class="fa-solid fa-cash-register"></i>
             <span>ชำระเงิน (Payment)</span>
+          </li>
+          <li class="menu-item" data-page="add-product-page">
+            <i class="fa-solid fa-plus-minus"></i>
+            <span>เพิ่มสินค้า (Products)</span>
           </li>
           <li class="menu-item" data-page="member-page">
             <i class="fa-solid fa-user-plus"></i>
@@ -166,12 +166,20 @@
                 <span><i class="fa-solid fa-qrcode"></i> QR Code รับชำระเงิน</span>
               </div>
               <div class="qrcode-section" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-                <div class="qrcode-container" id="qrcode-display-container" style="width: 100%; display: flex; justify-content: center; align-items: center; min-height: 180px; border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px; background: #FFFBF7;">
+                <div class="qrcode-container" id="qrcode-display-container" style="width: 100%; display: flex; justify-content: center; align-items: center; min-height: 180px; border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px; background: #FFFBF7; overflow: auto;">
                   <img id="qrcode-img" src="" alt="QR Code สำหรับชำระเงิน" style="max-width: 180px; max-height: 180px; display: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);">
                   <div id="qrcode-placeholder" class="qrcode-placeholder-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-qrcode" style="font-size: 48px; color: var(--text-muted); opacity: 0.5;"></i>
                     <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px; text-align: center;">ยังไม่มีรูป QR Code</p>
                   </div>
+                </div>
+                
+                <!-- เครื่องมือซูมรูปภาพ QR Code -->
+                <div id="qrcode-zoom-controls" style="display: none; align-items: center; gap: 8px; margin-top: -8px;">
+                  <button class="btn btn-yellow btn-icon-only" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;" onclick="zoomQRCode(-0.1)" type="button" title="ซูมออก"><i class="fa-solid fa-magnifying-glass-minus" style="font-size: 13px;"></i></button>
+                  <span id="qrcode-zoom-percent" style="font-size: 12px; font-weight: 600; min-width: 44px; text-align: center;">100%</span>
+                  <button class="btn btn-yellow btn-icon-only" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;" onclick="zoomQRCode(0.1)" type="button" title="ซูมเข้า"><i class="fa-solid fa-magnifying-glass-plus" style="font-size: 13px;"></i></button>
+                  <button class="btn btn-pink btn-icon-only" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;" onclick="resetQRCodeZoom()" type="button" title="รีเซ็ต"><i class="fa-solid fa-rotate-left" style="font-size: 13px;"></i></button>
                 </div>
                 <div class="qrcode-actions" style="display: flex; gap: 8px; width: 100%;">
                   <button class="btn btn-blue" onclick="triggerQRCodeUpload()" style="flex-grow: 1; font-size: 13px; padding: 8px 12px;">
@@ -271,6 +279,26 @@
                     <label class="form-label" for="prod-desc">คำอธิบายสินค้า</label>
                     <input class="form-input" type="text" id="prod-desc" placeholder="รายละเอียด เช่น รสชาติ, ขนาด, น้ำหนัก">
                   </div>
+                  <div class="form-group">
+                    <label class="form-label" for="prod-image-file">รูปภาพสินค้า</label>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                      <div id="product-image-preview-container" style="width: 50px; height: 50px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; background-color: #FFF3E0; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+                        <i id="product-image-preview-placeholder" class="fa-solid fa-image" style="font-size: 20px; color: var(--text-muted);"></i>
+                        <img id="product-image-preview" src="" alt="พรีวิวรูปภาพ" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                      </div>
+                      <div style="flex-grow: 1;">
+                        <button class="btn btn-yellow" type="button" onclick="triggerProductImageUpload()" style="font-size: 13px; padding: 8px 12px; width: 100%;">
+                          <i class="fa-solid fa-upload"></i> อัปโหลดรูปภาพ
+                        </button>
+                        <input type="file" id="prod-image-file" accept="image/*" style="display: none;" onchange="previewProductImage(event)">
+                      </div>
+                      <button id="btn-product-image-delete" class="btn btn-pink btn-icon-only" type="button" onclick="removeProductImage()" style="width: 38px; height: 38px; display: none;" title="ลบรูปภาพ">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    </div>
+                    <!-- ซ่อน Base64 สำหรับจัดเก็บลงสินค้า -->
+                    <input type="hidden" id="prod-image-base64">
+                  </div>
                   <div class="form-row">
                     <div class="form-group" style="margin-bottom: 0;">
                       <label class="form-label" for="prod-price">ราคาต่อหน่วย (บาท) <span style="color:red;">*</span></label>
@@ -317,6 +345,7 @@
                   <thead>
                     <tr>
                       <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-products" onchange="toggleSelectAllProducts(this)"></th>
+                      <th style="width: 60px; text-align: center;">รูปภาพ</th>
                       <th>บาร์โค้ด</th>
                       <th>ชื่อสินค้า</th>
                       <th>คำอธิบาย</th>
@@ -354,8 +383,8 @@
               </div>
               
               <!-- จำลองบาร์โค้ด ยิงบาร์โค้ด -->
-              <div class="barcode-scanner-simulator">
-                <div style="flex-grow: 1; position: relative;">
+              <div class="barcode-scanner-simulator" style="position: relative; z-index: 30;">
+                <div style="flex-grow: 1; position: relative; z-index: 31;">
                   <div class="input-with-icon">
                     <i class="fa-solid fa-barcode"></i>
                     <input class="form-input" type="text" id="scan-barcode-input" placeholder="พิมพ์บาร์โค้ด แล้วกด Enter (จำลองการยิงบาร์โค้ด)..." autocomplete="off">
@@ -370,7 +399,7 @@
               </div>
 
               <!-- ค้นหาแบบธรรมดา -->
-              <div class="form-group" style="position: relative; margin-bottom: 0;">
+              <div class="form-group" style="position: relative; margin-bottom: 0; z-index: 20;">
                 <div class="input-with-icon">
                   <i class="fa-solid fa-magnifying-glass"></i>
                   <input class="form-input" type="text" id="search-pay-product" placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหาและเลือกซื้อ..." autocomplete="off">
@@ -386,7 +415,7 @@
                 <span><i class="fa-solid fa-tags"></i> แคตตาล็อกสินค้าด่วน (คลิกเพื่อซื้อ)</span>
                 <span id="catalog-count-badge" class="badge badge-success" style="font-size: 11px;">0 สินค้า</span>
               </div>
-              <div id="quick-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 180px; overflow-y: auto; padding: 4px;">
+              <div id="quick-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 340px; overflow-y: auto; padding: 4px;">
                 <!-- Dynamic Content -->
               </div>
             </div>

@@ -24,6 +24,9 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwNinWUyhlgzW_vP7p1Tc8y
 let todaySalesChartRef = null;
 let monthlySalesChartRef = null;
 
+// QR Code Zoom Scale state
+let qrCodeZoomScale = 1.0;
+
 // Safe SweetAlert2 Fallback (handles offline or blocked CDNs)
 if (typeof Swal === 'undefined') {
   window.Swal = {
@@ -430,6 +433,132 @@ function setCurrentDateTime(elementId) {
   }
 }
 
+function getProductImageUrl(productName) {
+  const name = String(productName || '').toLowerCase();
+  if (name.includes('น้ำดื่ม') || name.includes('น้ำแร่') || name.includes('สิงห์') || name.includes('มิเนเร่') || name.includes('water')) {
+    return 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('โค้ก') || name.includes('coke') || name.includes('เป๊ปซี่') || name.includes('pepsi') || name.includes('น้ำอัดลม') || name.includes('สไปรท์') || name.includes('แฟนต้า') || name.includes('น้ำแดง') || name.includes('น้ำส้ม')) {
+    return 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ชาเขียว') || name.includes('โออิชิ') || name.includes('อิชิตัน') || name.includes('tea')) {
+    return 'https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('นม') || name.includes('โฟร์โมสต์') || name.includes('ดัชมิลล์') || name.includes('milk')) {
+    return 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('สปอนเซอร์') || name.includes('เกลือแร่') || name.includes('เอ็ม-150') || name.includes('คาราบาว') || name.includes('m-150')) {
+    return 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('เลย์') || name.includes('มันฝรั่ง') || name.includes('ปาปริก้า') || name.includes('chips') || name.includes('snack')) {
+    return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ทาโร่') || name.includes('เบนโตะ') || name.includes('สาหร่าย') || name.includes('เถ้าแก่น้อย') || name.includes('ปลาเส้น')) {
+    return 'https://images.unsplash.com/photo-1600962815726-457c46a12681?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('มาม่า') || name.includes('ไวไว') || name.includes('ยำยำ') || name.includes('บะหมี่') || name.includes('noodle')) {
+    return 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('สบู่') || name.includes('อาบน้ำ') || name.includes('แชมพู') || name.includes('ซันซิล') || name.includes('เคลียร์') || name.includes('soap')) {
+    return 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ข้าวสาร') || name.includes('ข้าวหอมมะลิ') || name.includes('rice')) {
+    return 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ไข่') || name.includes('egg')) {
+    return 'https://images.unsplash.com/photo-1516448620398-c5f44bf9f441?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ทิชชู่') || name.includes('กระดาษ') || name.includes('tissue')) {
+    return 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ปลากระป๋อง') || name.includes('canned')) {
+    return 'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('น้ำปลา') || name.includes('ซีอิ๊ว') || name.includes('ซอส') || name.includes('เกลือ') || name.includes('น้ำตาล')) {
+    return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ยากันยุง') || name.includes('สเปรย์') || name.includes('ถุงขยะ')) {
+    return 'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=150&auto=format&fit=crop&q=60';
+  }
+  if (name.includes('ยาพารา') || name.includes('ยาดม') || name.includes('ยา') || name.includes('ซาร่า')) {
+    return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&auto=format&fit=crop&q=60';
+  }
+  return 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=60';
+}
+
+function triggerProductImageUpload() {
+  const fileInput = document.getElementById('prod-image-file');
+  if (fileInput) fileInput.click();
+}
+
+function previewProductImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      let width = img.width;
+      let height = img.height;
+      const MAX_SIZE = 200;
+      
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height = Math.round((height * MAX_SIZE) / width);
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width = Math.round((width * MAX_SIZE) / height);
+          height = MAX_SIZE;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      
+      const previewImg = document.getElementById('product-image-preview');
+      const placeholder = document.getElementById('product-image-preview-placeholder');
+      const deleteBtn = document.getElementById('btn-product-image-delete');
+      const base64Input = document.getElementById('prod-image-base64');
+
+      if (previewImg) {
+        previewImg.src = compressedBase64;
+        previewImg.style.display = 'block';
+      }
+      if (placeholder) placeholder.style.display = 'none';
+      if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+      if (base64Input) base64Input.value = compressedBase64;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeProductImage() {
+  const previewImg = document.getElementById('product-image-preview');
+  const placeholder = document.getElementById('product-image-preview-placeholder');
+  const deleteBtn = document.getElementById('btn-product-image-delete');
+  const base64Input = document.getElementById('prod-image-base64');
+  const fileInput = document.getElementById('prod-image-file');
+
+  if (previewImg) {
+    previewImg.src = '';
+    previewImg.style.display = 'none';
+  }
+  if (placeholder) placeholder.style.display = 'flex';
+  if (deleteBtn) deleteBtn.style.display = 'none';
+  if (base64Input) base64Input.value = '';
+  if (fileInput) fileInput.value = '';
+}
+
 // Setup inputs, search suggestions, barcodes
 function setupSearchAndInputs() {
   const barcodeInput = document.getElementById('scan-barcode-input');
@@ -495,14 +624,15 @@ function showSuggestions(val) {
   const query = val.toLowerCase().trim();
   suggestionsBox.innerHTML = '';
 
-  // CRITICAL FIX: Clean barcode defensively to prevent matching issues on numeric types loaded from Sheets
+  const cleanedSearch = cleanBarcode(val);
   const filtered = query.length === 0 
     ? state.products.slice(0, 10) 
     : state.products.filter(p => {
         const nameStr = String(p.name || '').toLowerCase();
         const barcodeStr = cleanBarcode(p.barcode);
-        const queryCleaned = cleanBarcode(query);
-        return nameStr.includes(query) || (queryCleaned && barcodeStr.includes(queryCleaned)) || barcodeStr.includes(query);
+        return nameStr.includes(query) || 
+               barcodeStr.includes(query) ||
+               (cleanedSearch && barcodeStr.includes(cleanedSearch));
       });
 
   if (filtered.length === 0) {
@@ -516,14 +646,18 @@ function showSuggestions(val) {
       const div = document.createElement('div');
       div.className = 'search-result-item';
       
-      const barcodeText = String(p.barcode || '');
+      const barcodeText = cleanBarcode(p.barcode);
       const priceVal = parseFloat(p.price) || 0;
       const stockVal = parseInt(p.stock) || 0;
+      const imgUrl = p.image || getProductImageUrl(p.name);
 
       div.innerHTML = `
-        <div>
-          <div class="item-name" style="font-weight: 600; color: #3E2723;">${p.name || ''}</div>
-          <div class="item-barcode" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-barcode"></i> ${barcodeText}</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="${imgUrl}" alt="${p.name || ''}" style="width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-shrink: 0; background-color: #FFF3E0;">
+          <div>
+            <div class="item-name" style="font-weight: 600; color: #3E2723;">${p.name || ''}</div>
+            <div class="item-barcode" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-barcode"></i> ${barcodeText}</div>
+          </div>
         </div>
         <div>
           <span style="font-weight: 700; color: #E64A19;">${priceVal.toFixed(2)} ฿</span>
@@ -560,13 +694,15 @@ function showBarcodeSuggestions(val) {
   const query = val.toLowerCase().trim();
   suggestionsBox.innerHTML = '';
 
+  const cleanedSearch = cleanBarcode(val);
   const filtered = query.length === 0 
     ? state.products.slice(0, 10) 
     : state.products.filter(p => {
         const nameStr = String(p.name || '').toLowerCase();
         const barcodeStr = cleanBarcode(p.barcode);
-        const queryCleaned = cleanBarcode(query);
-        return nameStr.includes(query) || (queryCleaned && barcodeStr.includes(queryCleaned)) || barcodeStr.includes(query);
+        return nameStr.includes(query) || 
+               barcodeStr.includes(query) ||
+               (cleanedSearch && barcodeStr.includes(cleanedSearch));
       });
 
   if (filtered.length === 0) {
@@ -580,14 +716,18 @@ function showBarcodeSuggestions(val) {
       const div = document.createElement('div');
       div.className = 'search-result-item';
       
-      const barcodeText = String(p.barcode || '');
+      const barcodeText = cleanBarcode(p.barcode);
       const priceVal = parseFloat(p.price) || 0;
       const stockVal = parseInt(p.stock) || 0;
+      const imgUrl = p.image || getProductImageUrl(p.name);
 
       div.innerHTML = `
-        <div>
-          <div class="item-name" style="font-weight: 600; color: #3E2723;">${p.name || ''}</div>
-          <div class="item-barcode" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-barcode"></i> ${barcodeText}</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="${imgUrl}" alt="${p.name || ''}" style="width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-shrink: 0; background-color: #FFF3E0;">
+          <div>
+            <div class="item-name" style="font-weight: 600; color: #3E2723;">${p.name || ''}</div>
+            <div class="item-barcode" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-barcode"></i> ${barcodeText}</div>
+          </div>
         </div>
         <div>
           <span style="font-weight: 700; color: #E64A19;">${priceVal.toFixed(2)} ฿</span>
@@ -596,12 +736,19 @@ function showBarcodeSuggestions(val) {
       `;
       
       div.addEventListener('click', () => {
-        const barcodeInput = document.getElementById('scan-barcode-input');
-        if (barcodeInput) {
-          barcodeInput.value = barcodeText;
-          suggestionsBox.style.display = 'none';
-          handleBarcodeScanTrigger();
+        if (stockVal <= 0) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'สินค้าหมดคลัง',
+            text: `ขออภัย "${p.name}" ไม่มีสินค้าในสต็อกในขณะนี้`,
+            confirmButtonColor: '#0288D1'
+          });
+          return;
         }
+        addToCart(p);
+        const barcodeInput = document.getElementById('scan-barcode-input');
+        if (barcodeInput) barcodeInput.value = '';
+        suggestionsBox.style.display = 'none';
       });
       suggestionsBox.appendChild(div);
     });
@@ -741,6 +888,7 @@ function handleProductSubmit(e) {
   const description = document.getElementById('prod-desc').value.trim();
   const price = parseFloat(document.getElementById('prod-price').value) || 0;
   const stock = parseInt(document.getElementById('prod-stock').value) || 0;
+  const imageBase64 = document.getElementById('prod-image-base64').value;
 
   // CRITICAL FIX: Clean and compare barcodes defensively, and check IDs safely
   const duplicate = state.products.find(p => cleanBarcode(p.barcode) === cleanBarcode(barcode) && String(p.id) !== String(id));
@@ -763,7 +911,8 @@ function handleProductSubmit(e) {
         barcode,
         description,
         price,
-        stock
+        stock,
+        image: imageBase64 || ''
       };
       Swal.fire({
         icon: 'success',
@@ -781,6 +930,7 @@ function handleProductSubmit(e) {
       description,
       price,
       stock,
+      image: imageBase64 || '',
       createdAt: new Date().toISOString()
     };
     state.products.push(newProd);
@@ -810,6 +960,30 @@ function editProduct(id) {
   document.getElementById('prod-desc').value = p.description || '';
   document.getElementById('prod-price').value = p.price || 0;
   document.getElementById('prod-stock').value = p.stock || 0;
+
+  // Load custom image preview if exists
+  const previewImg = document.getElementById('product-image-preview');
+  const previewPlaceholder = document.getElementById('product-image-preview-placeholder');
+  const deleteBtn = document.getElementById('btn-product-image-delete');
+  const imageBase64Input = document.getElementById('prod-image-base64');
+
+  if (p.image) {
+    if (previewImg) {
+      previewImg.src = p.image;
+      previewImg.style.display = 'block';
+    }
+    if (previewPlaceholder) previewPlaceholder.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+    if (imageBase64Input) imageBase64Input.value = p.image;
+  } else {
+    if (previewImg) {
+      previewImg.src = '';
+      previewImg.style.display = 'none';
+    }
+    if (previewPlaceholder) previewPlaceholder.style.display = 'flex';
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    if (imageBase64Input) imageBase64Input.value = '';
+  }
 
   const submitBtn = document.querySelector('#product-form button[type="submit"]');
   submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> อัปเดตข้อมูลสินค้า';
@@ -852,6 +1026,20 @@ function deleteProduct(id) {
 function resetProductForm() {
   document.getElementById('product-id').value = '';
   document.getElementById('product-form').reset();
+  
+  // Clear custom image preview
+  const previewImg = document.getElementById('product-image-preview');
+  const previewPlaceholder = document.getElementById('product-image-preview-placeholder');
+  const deleteBtn = document.getElementById('btn-product-image-delete');
+  const imageBase64Input = document.getElementById('prod-image-base64');
+  
+  if (previewImg) {
+    previewImg.src = '';
+    previewImg.style.display = 'none';
+  }
+  if (previewPlaceholder) previewPlaceholder.style.display = 'flex';
+  if (deleteBtn) deleteBtn.style.display = 'none';
+  if (imageBase64Input) imageBase64Input.value = '';
   
   const submitBtn = document.querySelector('#product-form button[type="submit"]');
   submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> บันทึกสินค้า';
@@ -902,10 +1090,14 @@ function renderProductTable() {
 
     const barcodeStr = cleanBarcode(p.barcode);
     const priceVal = parseFloat(p.price) || 0;
+    const imgUrl = p.image || getProductImageUrl(p.name);
 
     tr.innerHTML = `
       <td style="text-align: center;">
         <input type="checkbox" class="product-checkbox" data-id="${p.id}" onchange="updateBulkDeleteButtonState()">
+      </td>
+      <td style="text-align: center;">
+        <img src="${imgUrl}" alt="${p.name || ''}" style="width: 40px; height: 40px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: #FFF3E0;">
       </td>
       <td style="font-family: monospace; font-weight: 600;">${barcodeStr}</td>
       <td style="font-weight: 600;">${p.name || ''}</td>
@@ -1191,13 +1383,35 @@ function importProductsFromExcel(event) {
 // -------------------------------------------------------------
 function handleBarcodeScanTrigger() {
   const inputEl = document.getElementById('scan-barcode-input');
-  const barcode = cleanBarcode(inputEl.value);
+  const query = inputEl.value.trim();
   
-  if (barcode.length === 0) return;
+  if (query.length === 0) return;
 
-  // CRITICAL FIX: Clean and match barcode defensively to handle numeric/string spreadsheet mismatches
-  const product = state.products.find(p => cleanBarcode(p.barcode) === barcode);
+  const barcode = cleanBarcode(query);
   
+  // 1. Try exact barcode match
+  let product = state.products.find(p => cleanBarcode(p.barcode) === barcode);
+  
+  // 2. Fallback: Try exact name match (case-insensitive)
+  if (!product) {
+    product = state.products.find(p => String(p.name || '').toLowerCase().trim() === query.toLowerCase());
+  }
+
+  // 3. Fallback: Try substring match on barcode or name (first match from suggestion logic)
+  if (!product) {
+    const cleanedSearch = cleanBarcode(query);
+    const filtered = state.products.filter(p => {
+      const nameStr = String(p.name || '').toLowerCase();
+      const barcodeStr = cleanBarcode(p.barcode);
+      return nameStr.includes(query.toLowerCase()) || 
+             barcodeStr.includes(query) || 
+             (cleanedSearch && barcodeStr.includes(cleanedSearch));
+    });
+    if (filtered.length > 0) {
+      product = filtered[0];
+    }
+  }
+
   if (product) {
     const stockVal = parseInt(product.stock) || 0;
     if (stockVal <= 0) {
@@ -1214,7 +1428,7 @@ function handleBarcodeScanTrigger() {
     Swal.fire({
       icon: 'error',
       title: 'ไม่พบสินค้า',
-      text: `ไม่พบสินค้าที่มีบาร์โค้ด "${barcode}" กรุณาตรวจสอบหรือเพิ่มสินค้าในระบบก่อน`,
+      text: `ไม่พบสินค้าที่มีรหัสหรือชื่อใกล้เคียงกับ "${query}" กรุณาตรวจสอบหรือเพิ่มสินค้าในระบบก่อน`,
       confirmButtonColor: '#EC407A'
     });
   }
@@ -1523,8 +1737,10 @@ function renderQuickCatalog() {
     else if (stock <= 5) stockBadgeClass = 'badge-warning';
 
     const priceVal = parseFloat(p.price) || 0;
+    const imgUrl = p.image || getProductImageUrl(p.name);
 
     btn.innerHTML = `
+      <img src="${imgUrl}" alt="${p.name || ''}" class="catalog-item-img">
       <div class="catalog-item-name" title="${p.name || ''}" style="font-size:12px; font-weight:600; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name || ''}</div>
       <div class="catalog-item-price" style="font-weight:700; color:#E64A19; font-size:12px;">${priceVal.toFixed(2)} ฿</div>
       <div class="catalog-item-stock badge ${stockBadgeClass}" style="font-size:9px; padding:2px 4px; margin-top:2px;">คงเหลือ ${stock}</div>
@@ -1733,7 +1949,7 @@ function renderMemberTable() {
     const tr = document.createElement('tr');
     
     const dt = new Date(m.dateTime);
-    const dateFormatted = isNaN(dt.getTime()) ? '-' : `${dt.toLocaleDateString('th-TH')} ${dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+    const dateFormatted = isNaN(dt.getTime()) ? '-' : `${dt.toLocaleDateString('th-TH')} ${dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.`;
     const debt = m.debt || 0;
 
     tr.innerHTML = `
@@ -1982,7 +2198,7 @@ function renderTransactionsTable(sales) {
     const dt = new Date(sale.dateTime);
     const dateStr = isNaN(dt.getTime()) 
       ? '-' 
-      : `${dt.toLocaleDateString('th-TH')} ${dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+      : `${dt.toLocaleDateString('th-TH')} ${dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.`;
 
     let itemsSummary = '';
     if (sale.items && Array.isArray(sale.items)) {
@@ -2254,7 +2470,15 @@ function loadFromGoogleSheet(sheetName) {
 
 function handleLoadResponse(sheetName, response) {
   if (sheetName === 'Products') {
-    state.products = Array.isArray(response.data) ? response.data : [];
+    const loaded = Array.isArray(response.data) ? response.data : [];
+    // Merge: preserve local images if they exist
+    state.products = loaded.map(loadedProd => {
+      const local = state.products.find(p => String(p.id) === String(loadedProd.id) || cleanBarcode(p.barcode) === cleanBarcode(loadedProd.barcode));
+      if (local && local.image) {
+        loadedProd.image = local.image;
+      }
+      return loadedProd;
+    });
     saveStateToLocalStorage('nok_pos_v2_products', state.products);
     renderProductTable();
     renderQuickCatalog();
@@ -2755,12 +2979,43 @@ function removeQRCode() {
   });
 }
 
+function zoomQRCode(amount) {
+  qrCodeZoomScale = Math.min(2.5, Math.max(0.5, qrCodeZoomScale + amount));
+  applyQRCodeZoom();
+}
+
+function resetQRCodeZoom() {
+  qrCodeZoomScale = 1.0;
+  applyQRCodeZoom();
+}
+
+function applyQRCodeZoom() {
+  const imgEl = document.getElementById('qrcode-img');
+  const percentEl = document.getElementById('qrcode-zoom-percent');
+  if (imgEl) {
+    const baseSize = 180;
+    imgEl.style.maxWidth = `${baseSize * qrCodeZoomScale}px`;
+    imgEl.style.maxHeight = `${baseSize * qrCodeZoomScale}px`;
+    imgEl.style.width = `${baseSize * qrCodeZoomScale}px`;
+    imgEl.style.height = `${baseSize * qrCodeZoomScale}px`;
+    imgEl.style.transition = 'width 0.15s ease, height 0.15s ease, max-width 0.15s ease, max-height 0.15s ease';
+  }
+  if (percentEl) {
+    percentEl.textContent = `${Math.round(qrCodeZoomScale * 100)}%`;
+  }
+}
+
 function loadQRCode() {
   const imgEl = document.getElementById('qrcode-img');
   const placeholderEl = document.getElementById('qrcode-placeholder');
   const deleteBtn = document.getElementById('btn-qrcode-delete');
+  const zoomControls = document.getElementById('qrcode-zoom-controls');
 
   if (!imgEl || !placeholderEl || !deleteBtn) return;
+
+  // Reset zoom scale when loading a new image
+  qrCodeZoomScale = 1.0;
+  applyQRCodeZoom();
 
   const savedQRCode = localStorage.getItem('nok_pos_v2_qrcode');
   if (savedQRCode) {
@@ -2768,6 +3023,7 @@ function loadQRCode() {
     imgEl.style.display = 'block';
     placeholderEl.style.display = 'none';
     deleteBtn.style.display = 'inline-flex';
+    if (zoomControls) zoomControls.style.display = 'flex';
     
     // Change button text to edit/change
     const uploadBtn = document.querySelector('.qrcode-actions button.btn-blue');
@@ -2779,6 +3035,7 @@ function loadQRCode() {
     imgEl.style.display = 'none';
     placeholderEl.style.display = 'flex';
     deleteBtn.style.display = 'none';
+    if (zoomControls) zoomControls.style.display = 'none';
     
     // Restore original text
     const uploadBtn = document.querySelector('.qrcode-actions button.btn-blue');
