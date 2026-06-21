@@ -66,7 +66,7 @@ if (typeof Chart === 'undefined') {
           const width = ctx.width || ctx.clientWidth || 300;
           const height = ctx.height || ctx.clientHeight || 150;
           context.clearRect(0, 0, width, height);
-          context.fillStyle = '#E64A19';
+          context.fillStyle = '#0288D1';
           context.font = '14px Prompt, sans-serif';
           context.textAlign = 'center';
           context.fillText('ไม่สามารถแสดงกราฟได้ (ไม่มีสัญญาณอินเทอร์เน็ตหรือโหลด CDN ไม่สำเร็จ)', width / 2, height / 2);
@@ -402,6 +402,20 @@ function getLocalDateTimeString(date = new Date()) {
   }
 }
 
+// Utility: Manual 24-Hour Thai Date-Time formatter to bypass OS/browser locales AM/PM discrepancies
+function formatThaiDateTime24H(dateTimeInput) {
+  try {
+    const dt = new Date(dateTimeInput);
+    if (isNaN(dt.getTime())) return '-';
+    const dateStr = dt.toLocaleDateString('th-TH');
+    const hours = String(dt.getHours()).padStart(2, '0');
+    const minutes = String(dt.getMinutes()).padStart(2, '0');
+    return `${dateStr} ${hours}:${minutes} น.`;
+  } catch (e) {
+    return '-';
+  }
+}
+
 // Robust barcode cleaning function to handle formatting differences (e.g. spaces, decimals, scientific notation)
 function cleanBarcode(barcode) {
   if (barcode === undefined || barcode === null) return '';
@@ -614,6 +628,16 @@ function setupSearchAndInputs() {
       }
     });
   }
+
+  const prodNameInput = document.getElementById('prod-name');
+  if (prodNameInput) {
+    prodNameInput.addEventListener('input', checkProductNameExists);
+  }
+
+  const prodBarcodeInput = document.getElementById('prod-barcode');
+  if (prodBarcodeInput) {
+    prodBarcodeInput.addEventListener('input', checkProductBarcodeExists);
+  }
 }
 
 // Renders the dropdown list for the search-pay-product field
@@ -653,14 +677,14 @@ function showSuggestions(val) {
 
       div.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-          <img src="${imgUrl}" alt="${p.name || ''}" style="width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-shrink: 0; background-color: #FFF3E0;">
+          <img src="${imgUrl}" alt="${p.name || ''}" style="width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-shrink: 0; background-color: #E3F2FD;">
           <div>
-            <div class="item-name" style="font-weight: 600; color: #3E2723;">${p.name || ''}</div>
+            <div class="item-name" style="font-weight: 600; color: var(--text-main);">${p.name || ''}</div>
             <div class="item-barcode" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-barcode"></i> ${barcodeText}</div>
           </div>
         </div>
         <div>
-          <span style="font-weight: 700; color: #E64A19;">${priceVal.toFixed(2)} ฿</span>
+          <span style="font-weight: 700; color: #0D47A1;">${priceVal.toFixed(2)} ฿</span>
           <span class="badge ${stockVal > 0 ? 'badge-success' : 'badge-danger'}" style="margin-left: 8px;">คงเหลือ ${stockVal}</span>
         </div>
       `;
@@ -723,14 +747,14 @@ function showBarcodeSuggestions(val) {
 
       div.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-          <img src="${imgUrl}" alt="${p.name || ''}" style="width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-shrink: 0; background-color: #FFF3E0;">
+          <img src="${imgUrl}" alt="${p.name || ''}" style="width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-shrink: 0; background-color: #E3F2FD;">
           <div>
-            <div class="item-name" style="font-weight: 600; color: #3E2723;">${p.name || ''}</div>
+            <div class="item-name" style="font-weight: 600; color: var(--text-main);">${p.name || ''}</div>
             <div class="item-barcode" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-barcode"></i> ${barcodeText}</div>
           </div>
         </div>
         <div>
-          <span style="font-weight: 700; color: #E64A19;">${priceVal.toFixed(2)} ฿</span>
+          <span style="font-weight: 700; color: #0D47A1;">${priceVal.toFixed(2)} ฿</span>
           <span class="badge ${stockVal > 0 ? 'badge-success' : 'badge-danger'}" style="margin-left: 8px;">คงเหลือ ${stockVal}</span>
         </div>
       `;
@@ -841,8 +865,8 @@ function renderTodaySalesChart(todaySales, selectedDateStr = null) {
       datasets: [{
         label: `ยอดขายวันที่ ${displayDate} (บาท)`,
         data: data,
-        backgroundColor: 'rgba(255, 112, 67, 0.75)',
-        borderColor: '#FF7043',
+        backgroundColor: 'rgba(2, 136, 209, 0.75)',
+        borderColor: '#0288D1',
         borderWidth: 2,
         borderRadius: 8,
         barPercentage: 0.6
@@ -860,7 +884,7 @@ function renderTodaySalesChart(todaySales, selectedDateStr = null) {
           ticks: {
             callback: value => value + ' ฿'
           },
-          grid: { color: '#FFF3E0' }
+          grid: { color: '#E2E8F0' }
         },
         x: { grid: { display: false } }
       }
@@ -871,12 +895,59 @@ function renderTodaySalesChart(todaySales, selectedDateStr = null) {
 // -------------------------------------------------------------
 // 2. PRODUCT MANAGEMENT LOGIC
 // -------------------------------------------------------------
+function checkProductNameExists() {
+  const nameInput = document.getElementById('prod-name');
+  const warningEl = document.getElementById('prod-name-exists-warning');
+  const editId = document.getElementById('product-id').value;
+  if (!nameInput || !warningEl) return;
+
+  const value = nameInput.value.trim().toLowerCase();
+  if (value.length === 0) {
+    warningEl.style.display = 'none';
+    return;
+  }
+
+  const exists = state.products.some(p => 
+    String(p.name || '').trim().toLowerCase() === value && 
+    String(p.id) !== String(editId)
+  );
+
+  warningEl.style.display = exists ? 'block' : 'none';
+}
+
+function checkProductBarcodeExists() {
+  const barcodeInput = document.getElementById('prod-barcode');
+  const warningEl = document.getElementById('prod-barcode-exists-warning');
+  const nameSpan = document.getElementById('prod-barcode-exists-name');
+  const editId = document.getElementById('product-id').value;
+  if (!barcodeInput || !warningEl) return;
+
+  const value = cleanBarcode(barcodeInput.value.trim());
+  if (value.length === 0) {
+    warningEl.style.display = 'none';
+    return;
+  }
+
+  const existingProduct = state.products.find(p => 
+    cleanBarcode(p.barcode) === value && 
+    String(p.id) !== String(editId)
+  );
+
+  if (existingProduct) {
+    if (nameSpan) nameSpan.textContent = existingProduct.name || '';
+    warningEl.style.display = 'block';
+  } else {
+    warningEl.style.display = 'none';
+  }
+}
+
 function generateRandomBarcode() {
   let barcode = '885'; // Thai Barcode Prefix
   for (let i = 0; i < 10; i++) {
     barcode += Math.floor(Math.random() * 10);
   }
   document.getElementById('prod-barcode').value = barcode;
+  checkProductBarcodeExists();
 }
 
 function handleProductSubmit(e) {
@@ -961,6 +1032,10 @@ function editProduct(id) {
   document.getElementById('prod-price').value = p.price || 0;
   document.getElementById('prod-stock').value = p.stock || 0;
 
+  // Run duplicate check immediately to clean/update warning indicators
+  checkProductNameExists();
+  checkProductBarcodeExists();
+
   // Load custom image preview if exists
   const previewImg = document.getElementById('product-image-preview');
   const previewPlaceholder = document.getElementById('product-image-preview-placeholder');
@@ -1027,6 +1102,12 @@ function resetProductForm() {
   document.getElementById('product-id').value = '';
   document.getElementById('product-form').reset();
   
+  // Hide existence warnings
+  const nameWarning = document.getElementById('prod-name-exists-warning');
+  const barcodeWarning = document.getElementById('prod-barcode-exists-warning');
+  if (nameWarning) nameWarning.style.display = 'none';
+  if (barcodeWarning) barcodeWarning.style.display = 'none';
+
   // Clear custom image preview
   const previewImg = document.getElementById('product-image-preview');
   const previewPlaceholder = document.getElementById('product-image-preview-placeholder');
@@ -1097,12 +1178,12 @@ function renderProductTable() {
         <input type="checkbox" class="product-checkbox" data-id="${p.id}" onchange="updateBulkDeleteButtonState()">
       </td>
       <td style="text-align: center;">
-        <img src="${imgUrl}" alt="${p.name || ''}" style="width: 40px; height: 40px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: #FFF3E0;">
+        <img src="${imgUrl}" alt="${p.name || ''}" style="width: 40px; height: 40px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: #E3F2FD;">
       </td>
       <td style="font-family: monospace; font-weight: 600;">${barcodeStr}</td>
       <td style="font-weight: 600;">${p.name || ''}</td>
       <td style="color: var(--text-muted); font-size: 13px;">${p.description || '-'}</td>
-      <td style="font-weight: 700; color: #E64A19;">${priceVal.toFixed(2)} ฿</td>
+      <td style="font-weight: 700; color: #0D47A1;">${priceVal.toFixed(2)} ฿</td>
       <td>
         <span class="badge ${stockBadgeClass}">
           ${stock === 0 ? 'หมดสต็อก' : stock + ' ชิ้น'}
@@ -1549,7 +1630,7 @@ function renderCart() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-weight:600;">${item.name || ''}</td>
-      <td style="color:#FF7043;">${(item.price || 0).toFixed(2)} ฿</td>
+      <td style="color:#0288D1;">${(item.price || 0).toFixed(2)} ฿</td>
       <td>
         <div class="quantity-control">
           <button class="btn-qty" onclick="updateCartQty('${item.id}', -1)">-</button>
@@ -1557,7 +1638,7 @@ function renderCart() {
           <button class="btn-qty" onclick="updateCartQty('${item.id}', 1)">+</button>
         </div>
       </td>
-      <td style="font-weight: 700; color:#E64A19;">${itemTotal.toFixed(2)} ฿</td>
+      <td style="font-weight: 700; color:#0D47A1;">${itemTotal.toFixed(2)} ฿</td>
       <td>
         <button class="btn btn-pink btn-icon-only" style="width:28px; height:28px;" onclick="removeFromCart('${item.id}')">
           <i class="fa-solid fa-xmark"></i>
@@ -1742,7 +1823,7 @@ function renderQuickCatalog() {
     btn.innerHTML = `
       <img src="${imgUrl}" alt="${p.name || ''}" class="catalog-item-img">
       <div class="catalog-item-name" title="${p.name || ''}" style="font-size:12px; font-weight:600; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name || ''}</div>
-      <div class="catalog-item-price" style="font-weight:700; color:#E64A19; font-size:12px;">${priceVal.toFixed(2)} ฿</div>
+      <div class="catalog-item-price" style="font-weight:700; color:#0D47A1; font-size:12px;">${priceVal.toFixed(2)} ฿</div>
       <div class="catalog-item-stock badge ${stockBadgeClass}" style="font-size:9px; padding:2px 4px; margin-top:2px;">คงเหลือ ${stock}</div>
     `;
 
@@ -1948,8 +2029,7 @@ function renderMemberTable() {
   filtered.forEach(m => {
     const tr = document.createElement('tr');
     
-    const dt = new Date(m.dateTime);
-    const dateFormatted = isNaN(dt.getTime()) ? '-' : `${dt.toLocaleDateString('th-TH')} ${dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.`;
+    const dateFormatted = formatThaiDateTime24H(m.dateTime);
     const debt = m.debt || 0;
 
     tr.innerHTML = `
@@ -2100,12 +2180,12 @@ function renderMonthlySalesChart(filteredSales, beYear, month) {
       datasets: [{
         label: 'ยอดขายรวม (บาท)',
         data: data,
-        borderColor: '#FF7043',
-        backgroundColor: 'rgba(255, 112, 67, 0.15)',
+        borderColor: '#0288D1',
+        backgroundColor: 'rgba(2, 136, 209, 0.15)',
         borderWidth: 3,
         fill: true,
         tension: 0.3,
-        pointBackgroundColor: '#FF5722',
+        pointBackgroundColor: '#01579B',
         pointRadius: 4
       }]
     },
@@ -2117,7 +2197,7 @@ function renderMonthlySalesChart(filteredSales, beYear, month) {
           display: true,
           text: chartTitle,
           font: { family: 'Prompt', size: 14, weight: '600' },
-          color: '#3E2723'
+          color: '#1E293B'
         },
         legend: { display: false }
       },
@@ -2127,7 +2207,7 @@ function renderMonthlySalesChart(filteredSales, beYear, month) {
           ticks: {
             callback: value => value + ' ฿'
           },
-          grid: { color: '#FFF3E0' }
+          grid: { color: '#E2E8F0' }
         },
         x: { grid: { display: false } }
       }
@@ -2195,10 +2275,7 @@ function renderTransactionsTable(sales) {
   sortedSales.forEach(sale => {
     const tr = document.createElement('tr');
 
-    const dt = new Date(sale.dateTime);
-    const dateStr = isNaN(dt.getTime()) 
-      ? '-' 
-      : `${dt.toLocaleDateString('th-TH')} ${dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })} น.`;
+    const dateStr = formatThaiDateTime24H(sale.dateTime);
 
     let itemsSummary = '';
     if (sale.items && Array.isArray(sale.items)) {
@@ -2217,7 +2294,7 @@ function renderTransactionsTable(sales) {
       <td style="font-size:13px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${itemsSummary}">
         ${itemsSummary}
       </td>
-      <td style="font-weight:700; color: #E64A19;">${total.toFixed(2)} ฿</td>
+      <td style="font-weight:700; color: #0D47A1;">${total.toFixed(2)} ฿</td>
       <td style="color: #0288D1;">${paid.toFixed(2)} ฿</td>
       <td style="color: #2E7D32;">${change.toFixed(2)} ฿</td>
       <td>
@@ -2257,7 +2334,7 @@ function editTransaction(id) {
     html: `
       <div style="text-align: left;">
         <p style="margin-bottom: 8px;"><b>เลขที่รายการ:</b> ${sale.id}</p>
-        <p style="margin-bottom: 16px;"><b>ยอดสุทธิ:</b> <span style="color: #E64A19; font-weight: 700;">${total.toFixed(2)} ฿</span></p>
+        <p style="margin-bottom: 16px;"><b>ยอดสุทธิ:</b> <span style="color: #0D47A1; font-weight: 700;">${total.toFixed(2)} ฿</span></p>
         
         <div class="form-group" style="margin-bottom: 14px;">
           <label class="form-label" for="edit-sale-datetime">วันที่และเวลาชำระเงิน</label>
@@ -2740,6 +2817,35 @@ function handleSettingsSubmit(e) {
   });
 }
 
+function playLineFallback() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    
+    const playTone = (freq, start, duration) => {
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+      
+      gainNode.gain.setValueAtTime(0, start);
+      gainNode.gain.linearRampToValueAtTime(0.12, start + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc.start(start);
+      osc.stop(start + duration);
+    };
+    
+    playTone(1046.50, now, 0.25);
+    playTone(1318.51, now + 0.08, 0.35);
+  } catch (e) {
+    console.error("Error playing Line synthesized fallback:", e);
+  }
+}
+
 function playSound(type) {
   try {
     // If it's a custom sound, play it using HTML5 Audio element directly
@@ -2749,6 +2855,15 @@ function playSound(type) {
         const audio = new Audio(customSound.data);
         audio.play().catch(err => console.error("Error playing custom sound:", err));
       }
+      return;
+    }
+
+    if (type === 'line') {
+      const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2021/05/Line-message-tone.mp3');
+      audio.play().catch(err => {
+        console.warn("Fallback to synthesized sound because online URL blocked or offline:", err);
+        playLineFallback();
+      });
       return;
     }
 
@@ -3346,6 +3461,7 @@ function refreshSoundSelectOptions() {
     <option value="chime">เสียงกระดิ่งใส (Chime)</option>
     <option value="beep">เสียงติ๊ดสั้น (Beep)</option>
     <option value="loud-bell">เสียงกระดิ่งดัง (Loud Bell)</option>
+    <option value="line">เสียงแจ้งเตือน LINE (LINE Sound)</option>
     <option value="none">ปิดเสียง (No Sound)</option>
   `;
 
